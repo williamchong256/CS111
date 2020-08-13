@@ -1,0 +1,54 @@
+NAME: William Chong
+EMAIL: williamchong256@gmail.com
+ID: 205114665
+
+Note for Grader:
+	I got everything to work smoothly up until the compression/decompression part of the program (I believe). 
+However, when I pass in the --compress option, things get weird. I observe that the client does compress the data
+and sends it to the socket (which can be seen in the log file). But, either the server does not decompress it properly,
+or there is something wrong when the client sends it to the socket. Either way, the client never registers any data
+written back to the socket by the server.
+	I hope that by looking at my code you can see that I did my best to implement the compression and decompression
+using zlib on both the client and the server. Perhaps we can set up a time to look through it together and debug it?
+Thank you for your time.	
+	(PS: I found that the sanity test gets stuck on the compress, so I just inputted '^C' and it ends up finishing 
+its run and says I fail 1 one part of the test.)
+
+
+README
+	This file outlines the contents of the lab1b-205114665.tar.gz tarball.
+
+
+lab1b-server.c
+	This is the C source code for the lab1b-server executable. This program sets up a server that communicates
+with a client via a TCP socket. Required is the --port=portnum argument which specifies which port the server 
+and client are on. 
+	The [--shell=program] option if specified causes the program to fork() and execute the entered program
+	in a child process. If not specified, the server simply echoes back the client input to the socket.
+
+	The [--compress] option if specified causes the program to compress data sent to the client using the
+	zlib library; it also decompresses data received from the server.
+
+lab1b-client.c
+	This is the C source code for the lab1b-client executable. This program sets up a client to communicate with
+the aforementioned server via a TCP socket. Required is the --port=portnum argument which specifies which port
+to communicate with the server on.
+	The [--compress] option if specified causes the program to compress and decompress data sent and received
+	from the server.
+	
+	The [--log=filename] option if specified causes the program to log all data transmitted through the TCP
+	socket. If the filename does not exist, it creates one.
+
+
+Makefile
+	This file compiles and performs actions on the .c source code files.
+
+	Targets:
+		default: compiles both lab1b-server.c and lab1b-client.c (if not already compiled) with the
+			-g, -Wextra, and -Wall for debugging. Also compiles with -lz to link zlib.
+		server: compiles the lab1b-server executable by itself
+		client: compiles the lab1b-client executable individually
+		dist: makes the tarball for distribution, includes README, Makefile, lab1b-server.c, lab1b-client.c
+		clean: clean the directory and return to untarred state.
+
+
