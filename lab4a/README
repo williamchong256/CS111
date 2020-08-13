@@ -1,0 +1,24 @@
+NAME: William Chong
+EMAIL: williamchong256@gmail.com
+ID: 205114665
+
+Beaglebone Serial Number: BBGW19010792
+MAC: 2CF7F106A2EC
+
+Files in lab4a-205114665.tar.gz:
+
+my_beaglebone.jpg: Selfie of me holding up my Beaglebone.
+
+connected.png: Screenshot of ifconfig output showing that I gave my Beaglebone
+	a name and configured network access.
+
+copy.png: Screenshot of me using scp() to copy over a helloworld.c program over 
+	to the beaglebone.
+
+build_run.png: Screenshot of me compiling and running the copied helloworld.c program.
+	This is done in a WiFi SSH session.
+
+git.png: Screenshot of me using apt-get to install git and 'git clone' to clone 
+	my git repository.
+
+Makefile: Used to build tarball for turn in.

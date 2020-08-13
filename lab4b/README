@@ -1,0 +1,37 @@
+NAME: William Chong
+EMAIL: williamchong256@gmail.com
+ID: 205114665
+
+Contents of lab4b-205114665.tar.gz
+
+lab4b.c: C source file for lab4b executable. This program generates timestamped 
+	temperature sensor reports. It optionally outputs the reports and input
+	commands to a specified --log=logfile. Commands that can be read during
+	runtime are START, STOP, SCALE=F/C, PERIOD=seconds, OFF. 
+
+Makefile:
+	Makefile to compile and build targets.
+	default: compiles lab4b executable from lab4b.c. links -lm -lmraa and
+	-std=c99. Builds with -g, -Wall, -Wextra flags. 
+	
+	check: executes smoke check script to test functionality of program.
+	
+	clean: restores to default, untarred state.
+
+	dist: builds tarball for distribution with lab4b.c Makefile, README, and 
+	smokecheck.sh
+
+smokecheck.sh:  script to run a few smokechecks on the program.
+
+Sources referenced:
+
+for help with time.h
+https://www.tutorialspoint.com/c_standard_library/c_function_time.htm
+https://www.tutorialspoint.com/c_standard_library/c_function_difftime.htm
+https://www.tutorialspoint.com/c_standard_library/c_function_localtime.htm
+
+strcpy
+https://www.tutorialspoint.com/c_standard_library/c_function_strcpy.htm
+
+file open
+https://pubs.opengroup.org/onlinepubs/009695399/functions/open.html

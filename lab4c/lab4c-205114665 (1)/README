@@ -1,0 +1,51 @@
+NAME: William Chong
+EMAIL: williamchong256@gmail.com
+ID: 205114665
+
+Contents of lab4c-205114665.tar.gz
+-----------------------------------
+
+lab4c_tcp.c: C source file for lab4c_tcp executable. 
+	This program communicates with a server via TCP and generates timestamped 
+	temperature sensor reports. It optionally outputs the reports and input
+	commands to a specified --log=logfile. Commands that can be read during
+	runtime are START, STOP, SCALE=F/C, PERIOD=seconds, OFF. 
+
+lab4c_tls.c: C source file for lab4c_tls executable.
+	This program communicates with a server via TCP and SSL to protect
+	communication from attack. It also generates timestamped temperature
+	reports and processes commands in the same way that lab4c_tcp does.
+
+Makefile: Makefile to compile and build targets.
+
+	default: compiles lab4c_tcp and lab4c_tls executables from 
+	  lab4c_tcp.c and lab4c_tls.c, respectively. Links -lm -lmraa -lssl
+	  -lcrypto and -std=c99. Builds with -g, -Wall, -Wextra flags. 
+	
+	clean: restores to default, untarred state.
+
+	dist: builds tarball for distribution with lab4c_tcp.c lab4c_tls.c
+	  Makefile, README.
+
+
+
+Sources referenced:
+--------------------
+for help with openssl:
+https://www.openssl.org/docs/man1.0.2/man3/SSL_get_error.html
+https://www.openssl.org/docs/man1.0.2/man3/SSL_connect.html
+https://www.openssl.org/docs/manmaster/man3/SSL_set_fd.html
+https://www.openssl.org/docs/man1.0.2/man3/SSL_library_init.html
+https://www.openssl.org/docs/manmaster/man7/ssl.html
+and TA discussion slides.
+
+for help with time.h
+https://www.tutorialspoint.com/c_standard_library/c_function_time.htm
+https://www.tutorialspoint.com/c_standard_library/c_function_difftime.htm
+https://www.tutorialspoint.com/c_standard_library/c_function_localtime.htm
+
+strcpy
+https://www.tutorialspoint.com/c_standard_library/c_function_strcpy.htm
+
+file open
+https://pubs.opengroup.org/onlinepubs/009695399/functions/open.html

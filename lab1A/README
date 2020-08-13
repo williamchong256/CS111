@@ -1,0 +1,29 @@
+NAME: William Chong
+EMAIL: williamchong256@gmail.com
+ID: 205114665
+
+Contents of lab1a-205114665.tar.gz:
+
+lab1a.c:
+	The source file used to compile the lab1a executable.
+	Program behavior:
+		Without passing in the --shell=program argument, the program changes the console to character-at-a-time, no-echo mode. 
+		Keyboard input is echoed to stdout one char at a time, and is read one character at a time.
+
+		Passing in the [--shell=program] optional argument; the program forks a process and executes the inputted program.
+		It then passes keyboard input to the screen and created process program. It also passes the output of the shell/program 
+		back to the screen. The program is terminated by EOF by the executed program, or by ^D or ^C input from keyboard.
+		Uses pollfd structures to monitor which pipe to read from and write to.
+
+
+Makefile:
+	To compile and perform actions on the lab1a.c source file. Targets:
+
+	- default: Compiles the lab1a executable from the lab1a.c source file with the '-g', '-Wall', and '-Wextra' options for debugging
+
+	- dist: builds the tarball for distribution, includes lab1a.c, Makefile, and README files.
+
+	- clean: delete all the files created by Makefile and return to untarred state
+
+README:
+	This file, which describes the contents of each file.

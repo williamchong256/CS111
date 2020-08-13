@@ -1,0 +1,127 @@
+NAME: William Chong
+EMAIL: williamchong256@gmail.com
+ID: 205114665
+
+
+Contents of lab2b-205114665.tar.gz tarball:
+
+lab2_list.c: C source code that uses multithreading to drive the SortedList.c doubly-linked, circular linked
+	list. Has command line options to specify num of threads, iterations, yields, and sync protection.
+
+SortedList.h: header file that describes the interface for the linked list operations
+
+SortedList.c: C module that implements the linked list operations specified in the header file.
+
+data_generator.sh: a test script that runs various combinations of commandline options on
+	lab2_list and outputs them to .csv files.
+
+lab2b_list.csv:
+	This is the CSV test outputs for lab2_list.
+
+lab2_list.gp:
+	this script generates the graphs using gnuplot from the data in the .csv files.
+
+.png files.
+	lab2b_1.png ... throughput vs. number of threads for mutex and spin-lock sync
+	lab2b_2.png ... mean time per mutex wait and mean time per op for mutex-sync.
+	lab2b_3.png ... successful iterations vs. threads for each sync method.
+	lab2b_4.png ... throughput vs. number of threads for mutex synchronized 
+		partitioned lists.
+	lab2b_5.png ... throughput vs. number of threads for spin-lock-sync 
+		partitioned lists.
+
+profile.out: 
+	the execution profiling report showing where the time was spent in unpartitioned spinlock list.
+
+Makefile: 
+  default: compiles the lab2_list executable from the lab2_list.c 
+	source file, and SortedList.c module. Compiles with
+	-pthread, -lprofiler, -g, -Wall, -Wextra flags.
+  tests: runs the data_generator.sh script to run tests on lab2_list
+	and generates .csv file for graphs
+  profile: runs tests with google pprof to generate a execution
+	profiling report
+  graphs: uses lab2_list.gp script using gnuplot to generate graphs
+  dist: creates the distribution tarball
+  clean: restores directory to freshly untarred state.
+
+
+
+TODO: FINISH README, FINISH LAST QUESTION, ADD LINES FOR 4-PNG AND 5-PNG,
+MAKE SURE MAKE IS SILENT, FIX FIRST AND SECOND PNG, ENSURE IS WORKING 
+PROPERLY FOR SYNC AND LISTS
+
+
+---------Questions-----------
+
+QUESTION 2.3.1 - CPU time in the basic list implementation:
+
+Most of the CPU time in the 1 and 2 thread tests are spent doing 
+the list operations, since there are not many threads in competition
+for the list resources. 
+
+These are the most expensive parts because
+accessing each element requires multiple memory accesses, and 
+these list operations often require multiple element accesses.
+
+Most of the CPU time in high-thread spin-lock tests is likely spent 
+spin-waiting for locks to be unlocked; competing threads take a long
+time waiting for locks to be unlocked, instead of doing work.
+
+Most of the CPU time in high-thread mutex tests is likely spent 
+context switching when a thread cannot acquire a lock, thus with
+more threads, there are more context switches which have high 
+overhead.
+
+
+QUESTION 2.3.2 - Execution Profiling:
+
+The line of code calling the spin-lock (lock acquire) function takes up
+most of the CPU time. This is because with more threads there is higher
+contention for the lock, and thus more threads spend CPU time 
+spin-waiting for the lock to be freed up. 
+
+
+QUESTION 2.3.3 - Mutex Wait Time:
+
+The average lock-wait time rises quickly and dramatically with increasing
+number of contending threads because with more contention, threads
+spend more time waiting for the lock to be freed. 
+
+The completion time per operation rises with the number of contending 
+threads because this measure is the average of the total time spent 
+per thread which is influenced in part by the increased overhead due
+to waking up threads and context switches. With more contending threads
+the overall total time increases in general (not necessarily because
+the actual list operations are taking longer).
+
+The wait time per operation increases faster than the completion time
+per operation because it is calculated on a per-thread basis THEN 
+averaged, whereas the completion time is calculated by taking the total
+overall time for all threads and dividing that by the number of ops.
+Since there are multiple threads waiting for the lock, it means that the
+wait time per operation for each thread overlaps with other threads'
+which leads to a higher increase/counted time than the single (overall)
+time count in the main thread.
+
+
+QUESTION 2.3.4 - Performance of Partitioned Lists
+
+As the number of lists increases, the throughput of both synchronization
+methods increases. This is to be expected because with more sublists, 
+there is less contention amongst the threads to perform list operations
+and thus there is less time spent waiting for locks. 
+
+Throughput will continue to increase, but will eventually reach a point 
+where adding more lists will not further increase because at that point
+there will be virtually no contention (assuming a good hash function)
+for list access and operations. For example the theoretical throughput
+to insert 10 elements into 10 lists using 10 threads is identical to using
+one thread to insert 10 elements into one list. 
+
+Building off of the above reasoning, it is reasonable to suggest that the 
+throughput of an N-way partitioned list is equal to the throughput of a 
+single list with (1/N) threads. This is because the contention for both
+would be about the same, leading to similar throughput. This is shown in
+the graphs.
+

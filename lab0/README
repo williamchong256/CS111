@@ -1,0 +1,53 @@
+NAME: William Chong
+EMAIL: williamchong256@gmail.com
+ID: 205114665
+
+README
+
+Files included in lab0-205114665.tar.gz tarball:
+
+lab0.c:
+	This source file is used to compile the lab0 executable. 
+	Program behavior:
+		- copies from standard input to standard output
+		- when [--input filename] is passed in as an option, the specified input file is used instead of standard input.
+		- when [--output filename] is passed in as an option, the input is written to the specified filename, or creates the output file.
+		- when [--segfault] is passed in, the program does not do any copying, and immediately segfaults.
+		- when [--catch] is passed in, the program setsup a segfault handler to catch segfaults and exit accordingly
+
+Makefile:
+	This file builds the following targets:
+	
+	default: uses gcc to compile lab0.c with debug option -g and -Wall and -Wextra options
+
+	check: runs an external smokecheck.sh script to run the program against several smoke check test cases
+
+	dist: builds the tarball for distribution, includes lab0.c, Makefile, breakpoint.png, backtrace.png, README, and smokecheck.sh files.
+
+	clean: delete all the files created by Makefile and return to untarred state
+
+
+smokecheck.sh
+	external smokecheck bash script used to run lab0 program against the following test cases:
+
+	- Check that when passing in a normal, correctly formatted set of options, exits successfully with exit code 0.
+	- Check that program correctly copies from inputfile to outputfile using the `cmp` command
+
+	- Check that program correctly handles unrecognized options, and exits correctly with exit code 1.
+
+	- Check that program correctly handles inability to open input file, exits correctly with exit code 2.
+
+	- Check that program correctly handles inability to write to output file, exits correctly with exit code 3.
+
+	- Check that program correctly catches SIGSEGV signal and exits correctly with exit code 4.
+
+
+backtrace.png
+	a screenshot of the stack backtrace resulting from passing in the --segfault option (which caused the segfault)
+
+breakpoint.png
+	a screenshot of using gdb to set a breakpoint at the segmentation fault and inspect whether the pointer was indeed null.
+
+
+README
+	file describing each file in the tarball.

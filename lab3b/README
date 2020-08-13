@@ -1,0 +1,26 @@
+NAME: Jongyun Park, William Chong
+EMAIL: jp101200@g.ucla.edu, williamchong256@gmail.com
+ID: 505096047, 205114665
+
+README
+
+lab3b.py: the python3 source code for the lab3b executable script. Reads a .csv input file of
+    a summary of a file system and checks for consistency (directories, inodes, blocks...)
+
+
+my_lab3b: helper script to run lab3b.py as a python3 script. 
+
+
+Makefile: 
+
+    default: links helper script to the symbolic link 'lab3b' which allows lab3b.py to be run
+	when lab3b is called. gives executable permission to user.
+
+    clean: restores directory to freshly untarred state.
+
+    dist: builds the distribution tarball with lab3b.py, my_lab3b, README, and Makefile
+
+
+README: this file for descriptions of the files in the tarball.
+
+
