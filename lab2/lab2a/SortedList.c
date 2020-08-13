@@ -31,36 +31,39 @@
 */
 void SortedList_insert(SortedList_t *list, SortedListElement_t * element)
 {
-    //lab2_list.c will handle malloc
-    SortedListElement_t* curr = list;
     if (opt_yield & INSERT_YIELD)
     {
         sched_yield();
     }
-    
-    //if empty list, i.e. next pointer is the head, also has NULL key
+    //lab2_list.c will handle malloc
+    SortedListElement_t* curr = list;
+
+    //if empty list insert after head, i.e. next pointer is the head, or has NULL key
     if ((curr->next)->key == NULL)
     {
         curr->next = element;
         curr->prev = element;
         element->next = list;
         element->prev = list;
+        return;
     }
-    else{
-        //not empty list, find correct place to put element
-        //continue iterating through if havent come back to head,
-        //and if the next listelement's key is still less than the one we wish to insert
-        while ( ((curr->next)->key != NULL) && (strcmp((curr->next)->key, element->key) <= 0) )
-        {
-            curr = curr->next;
-        }
-        //now curr points at the element before the element with a key greater than insertelement.
-        //insert the specified element between curr and curr->next
-        (curr->next)->prev = element;
-        element->next = curr->next;
-        element->prev = curr;
-        curr->next = element;
+
+    curr = list->next;
+
+    //not empty list, find correct place to put element
+    //continue iterating through if havent come back to head,
+    //and if the next listelement's key is still less than the one we wish to insert
+    while ( (curr->key != NULL) && (strcmp(curr->key, element->key) <= 0) )
+    {
+        curr = curr->next;
     }
+
+    //now curr points at the element before the element with a key greater than insertelement.
+    //insert the specified element between curr and curr->next
+    (curr->next)->prev = element;
+    element->next = curr->next;
+    element->prev = curr;
+    curr->next = element;
 }
 
 
@@ -85,6 +88,7 @@ int SortedList_delete( SortedListElement_t *element)
     {
         sched_yield();
     }
+        
     //check if previous element's next points to this
     //check if next element's prev points to this
     if ( ((element->prev)->next == element) && ((element->next)->prev == element) )
@@ -112,12 +116,14 @@ int SortedList_delete( SortedListElement_t *element)
  */
 SortedListElement_t *SortedList_lookup(SortedList_t *list, const char *key)
 {
-    SortedListElement_t *curr = list->next; //start with first node in list
-    
     if (opt_yield & LOOKUP_YIELD)
     {
-        sched_yield();
+           sched_yield();
     }
+        
+    SortedListElement_t *curr = list->next; //start with first node in list
+    
+   
     //iterate through list looking for key, stop if return back to head
     while ( curr->key != NULL )
     {
@@ -144,13 +150,14 @@ SortedListElement_t *SortedList_lookup(SortedList_t *list, const char *key)
 int SortedList_length(SortedList_t *list)
 {
     int length=0;
-    SortedListElement_t *curr = list->next; //start with first node after head
-    
     if (opt_yield & LOOKUP_YIELD)
     {
         sched_yield();
     }
+       
+    SortedListElement_t *curr = list->next; //start with first node after head
     
+   
     //iterate through list until reach head
     while (curr->key != NULL)
     {
@@ -162,6 +169,6 @@ int SortedList_length(SortedList_t *list)
         curr = curr->next;
         length++;
     }
-    
     return length;
 }
+

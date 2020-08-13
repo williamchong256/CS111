@@ -59,61 +59,105 @@ char* generateRandomKey(){
 //exits to re-join the parent thread
 void* threadFunction(void *arg)
 {
-    if (opt_sync == 'm')
-    {
-        pthread_mutex_lock(&mutexlock);  //acquire mutex lock
-    }
-    else if (opt_sync == 's')
-    {
-        spinLock();  //acquire lock with spinLock;
-    }
-    
     //passed in argument is the elements array starting at the corresponding thread's offset
     SortedListElement_t * threadElements = arg;
     
     //insert all of them into the global list
     for (int i=0; i<num_iterations; i++)
     {
+        if (sync_type == 'm')
+        {
+            pthread_mutex_lock(&mutexlock);  //acquire mutex lock
+        }
+        else if (sync_type == 's')
+        {
+            spinLock();  //acquire lock with spinLock;
+        }
+        
         SortedList_insert(list, (SortedListElement_t*) (threadElements+i));
+        
+        //release mutex or spin lock
+        if (sync_type == 'm')
+        {
+            pthread_mutex_unlock(&mutexlock);  //release mutex lock
+        }
+        else if (sync_type == 's')
+        {
+            spinLockRelease();  //release spinlock;
+        }
+        
     }
     
     //get list length
+    if (sync_type == 'm')
+    {
+        pthread_mutex_lock(&mutexlock);  //acquire mutex lock
+    }
+    else if (sync_type == 's')
+    {
+        spinLock();  //acquire lock with spinLock;
+    }
+    
     int list_len = SortedList_length(list);
     if (list_len==-1)   //corrupted list
     {
         fprintf(stderr, "Corrupted list detected.\n");
         exit(2);
     }
-    else if (list_len != num_iterations)  //if length does not match up
+    else if (list_len < num_iterations)  //if length does not match up
     {
         fprintf(stderr, "Incorrect number of elements inserted into list.\n");
         exit(2);
     }
     
+    //release mutex or spin lock
+    if (sync_type == 'm')
+    {
+        pthread_mutex_unlock(&mutexlock);  //release mutex lock
+    }
+    else if (sync_type == 's')
+    {
+        spinLockRelease();  //release spinlock;
+    }
+    
+    
     //look up and delete each of keys inserted
     for (int i=0; i<num_iterations; i++)
     {
+        if (sync_type == 'm')
+        {
+            pthread_mutex_lock(&mutexlock);  //acquire mutex lock
+        }
+        else if (sync_type == 's')
+        {
+            spinLock();  //acquire lock with spinLock;
+        }
+        
         if ( SortedList_lookup(list, (threadElements+i)->key) == NULL) //failed lookup
         {
             fprintf(stderr, "Not able to find key: %s in list.\n",(threadElements+i)->key );
             exit(2);
         }
+
         if ( SortedList_delete(threadElements+i) != 0 ) //if corrupted
         {
             fprintf(stderr, "Corrupt list element detected. Failed delete.\n");
             exit(2);
         }
+        
+        //release mutex or spin lock
+        if (sync_type == 'm')
+        {
+            pthread_mutex_unlock(&mutexlock);  //release mutex lock
+        }
+        else if (sync_type == 's')
+        {
+            spinLockRelease();  //release spinlock;
+        }
+        
     }
     
-    //release mutex or spin lock
-    if (opt_sync)
-    {
-        pthread_mutex_unlock(&mutexlock);  //release mutex lock
-    }
-    else if (opt_sync == 's')
-    {
-        spinLockRelease();  //release spinlock;
-    }
+    
     pthread_exit(NULL);
 }
 
@@ -156,7 +200,7 @@ int main(int argc, char * argv[]) {
                 }
                 break;
             case 'y':
-                for (int i=0; i<strlen(optarg); i++)
+                for (size_t i=0; i<strlen(optarg); i++)
                 {
                     switch (optarg[i])
                     {
@@ -232,7 +276,7 @@ int main(int argc, char * argv[]) {
     //create threads
     for (int i=0; i<num_threads; i++)
     {
-        if (pthread_create(&threads[i], NULL, (void*)&threadFunction, (void*)elements+(i*num_iterations)) != 0) //pass in elements[offset]
+        if (pthread_create(&threads[i], NULL, (void*)&threadFunction, (void*)(elements+(i*num_iterations))) != 0) //pass in elements[offset]
         {
             fprintf(stderr, "Error creating threads.\n");
             exit(1);
@@ -253,6 +297,14 @@ int main(int argc, char * argv[]) {
     {
         fprintf(stderr, "Error getting endtime with clock_gettime().\n");
         exit(1);
+    }
+    
+    //check length of list to see if 0
+    int length =SortedList_length(list);
+    if ( length != 0)
+    {
+        fprintf(stderr, "Length of list is not 0, length is %d.\n", length );
+        exit(2);
     }
     
     //    the total number of operations performed: threads x iterations x 3 (insert + lookup + delete)
@@ -352,3 +404,4 @@ int main(int argc, char * argv[]) {
        
     exit(0);
 }
+

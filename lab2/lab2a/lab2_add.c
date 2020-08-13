@@ -1,41 +1,130 @@
-//
-//  main.c
-//  lab2_add
-//
-//  Created by William Chong on 5/8/20.
-//  Copyright © 2020 William Chong. All rights reserved.
-//
+//NAME: William Chong
+//EMAIL: williamchong256@gmail.com
+//ID: 205114665
 
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <time.h>
 #include <getopt.h>
+#include <string.h>
 
 //global counter
 long long counter;
+int num_iterations;
+int num_threads;
+int opt_yield;
+int opt_sync;
+char sync_type;
+pthread_mutex_t countermutex = PTHREAD_MUTEX_INITIALIZER; //statically initialize mutex
+
+volatile int spinlockvar = 0;
 
 //TODO:
     //takes a parameter for the number of parallel threads (--threads=#, default 1).
     //takes a parameter for the number of iterations (--iterations=#, default 1).
     //initializes a (long long) counter to zero
 
+void spinLock()
+{
+    while (__sync_lock_test_and_set(&spinlockvar, 1));
+}
+
+void spinLockRelease()
+{
+    __sync_lock_release(&spinlockvar);
+}
+
 
 void add(long long *pointer, long long value) {
         long long sum = *pointer + value;
+        if (opt_yield)
+                sched_yield();
         *pointer = sum;
 }
 
-void threadFunction(void* iterations)
+void* threadFunction()
 {
-    add(&counter, 1);
-    add(&counter, -1);
+    long long oldval, newval;
+    
+    //to add 1
+    for (int i=0; i<num_iterations; i++)
+    {
+        if (opt_sync){
+            switch(sync_type) {
+                case 'm':
+                    //mutex
+                    pthread_mutex_lock(&countermutex);
+                    add(&counter, 1);
+                    pthread_mutex_unlock(&countermutex);
+                    break;
+                case 's':
+                    //spinlock
+                    spinLock();
+                    add(&counter,1);
+                    spinLockRelease();
+                    break;
+                case 'c':
+                    //compare and swap
+                    do {
+                        oldval = counter;
+                        newval = oldval + 1;
+                        if (opt_yield)
+                        {
+                            sched_yield();
+                        }
+                    }while (__sync_val_compare_and_swap(&counter, oldval, newval) != oldval);
+                    break;
+            }
+        }
+        else {
+            add(&counter, 1);
+        }
+        
+    }
+    
+    //to add -1
+    for (int i=0; i<num_iterations; i++)
+    {
+        if (opt_sync)
+        {
+            switch (sync_type) {
+                case 'm':
+                    pthread_mutex_lock(&countermutex);
+                    add(&counter, -1);
+                    pthread_mutex_unlock(&countermutex);
+                    break;
+                case 's':
+                    spinLock();
+                    add(&counter, -1);
+                    spinLockRelease();
+                    break;
+                case 'c':
+                    //compare and swap
+                    do {
+                        oldval = counter;
+                        newval = oldval - 1;
+                        if (opt_yield)
+                        {
+                            sched_yield();
+                        }
+                    }while (__sync_val_compare_and_swap(&counter, oldval, newval) != oldval);
+                    break;
+            }
+        }
+        else {
+            add(&counter, -1);
+        }
+    }
+    pthread_exit(NULL);
 }
 
 int main(int argc, char * argv[]) {
     struct timespec starttime, endtime;
-    int num_threads = 1;
-    int num_iterations = 1;
+    num_iterations = 1;
+    num_threads = 1;
+    opt_yield = 0;
+    opt_sync = 0;
     counter = 0;
     void* status;
     
@@ -43,6 +132,8 @@ int main(int argc, char * argv[]) {
     static struct option longopts[] = {
         {"threads", required_argument, 0, 't'},
         {"iterations", required_argument, 0, 'i'},
+        {"yield", no_argument, 0, 'y'},
+        {"sync", required_argument, 0, 's'},
         {0,0,0,0}
     };
     int optionindex = 0;
@@ -65,6 +156,13 @@ int main(int argc, char * argv[]) {
                     fprintf(stderr, "Invalid argument to --iterations.\n");
                     exit(1);
                 }
+                break;
+            case 'y':
+                opt_yield = 1;
+                break;
+            case 's':
+                opt_sync = 1;
+                sync_type = optarg[0];
                 break;
             default:
                 fprintf(stderr, "Invalid argument. Correct usage: ./lab2_add --threads=numthreads --iterations=numiterations\n");
@@ -90,7 +188,7 @@ int main(int argc, char * argv[]) {
     //create threads
     for (int i=0; i<num_threads; i++)
     {
-        if (pthread_create(&threads[i], NULL, (void*)&threadFunction, (void*)&num_iterations) != 0)
+        if (pthread_create(&threads[i], NULL, (void*)&threadFunction, NULL) != 0)
         {
             fprintf(stderr, "Error creating threads.\n");
             exit(1);
@@ -116,12 +214,62 @@ int main(int argc, char * argv[]) {
     //total num of operations
     long num_operations = num_threads * num_iterations * 2;
     //total runtime
-    int run_time = (endtime.tv_sec*1e9 + endtime.tv_nsec) - (starttime.tv_sec*1e9 + starttime.tv_nsec);
+    long run_time = (endtime.tv_sec*1e9 + endtime.tv_nsec) - (starttime.tv_sec*1e9 + starttime.tv_nsec);
     //average time per operation
-    int avg_op_time = run_time / num_operations;
+    long avg_op_time = run_time / num_operations;
 
+    //initialize a string to store tag, zero out the memory
+    char tag [30];
+    memset(tag, 0, 30*sizeof(char));
+    sprintf(tag, "add");
+    
+    
+    if (opt_yield)
+    {
+        strcat(tag, "-yield");
+        if (opt_sync)
+        {
+            switch (sync_type) {
+                case 'm':
+                    strcat(tag, "-m");
+                    break;
+                case 's':
+                    strcat(tag, "-s");
+                    break;
+                case 'c':
+                    strcat(tag, "-c");
+                    break;
+            }
+        }
+        else {
+            strcat(tag, "-none");
+        }
+    }
+    else
+    {
+        //no yield option
+        if (opt_sync)
+        {
+            switch (sync_type) {
+                case 'm':
+                    strcat(tag, "-m");
+                    break;
+                case 's':
+                    strcat(tag, "-s");
+                    break;
+                case 'c':
+                    strcat(tag, "-c");
+                    break;
+            }
+        }
+        else {
+            //add-none
+            strcat(tag, "-none");
+        }
+    }
+    
     //prints to stdout a comma-separated-value (CSV) record
-    printf("add-none,%d,%d,%ld,%d,%d,%lld\n", num_threads, num_iterations, num_operations, run_time, avg_op_time, counter);
+    printf("%s,%d,%d,%ld,%ld,%ld,%lld\n", tag, num_threads, num_iterations, num_operations, run_time, avg_op_time, counter);
 //    the name of the test (add-none for the most basic usage)
 //    the number of threads (from --threads=)
 //    the number of iterations (from --iterations=)
@@ -130,6 +278,9 @@ int main(int argc, char * argv[]) {
 //    the average time per operation (in nanoseconds).
 //    the total at the end of the run (0 if there were no conflicting updates)
     
+    //destroy the mutex
+    pthread_mutex_destroy(&countermutex);
+    pthread_exit(NULL);
     
     return 0;
 }

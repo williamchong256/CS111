@@ -2,6 +2,57 @@ NAME: William Chong
 EMAIL: williamchong256@gmail.com
 ID: 205114665
 
+Contents of tarball:
+
+lab2_add.c: C source code to implement and test a shared global variable. Uses locks and multithreading.
+
+lab2_list.c: C source code that uses multithreading to drive the SortedList.c doubly-linked, circular linked
+	list. Has command line options to specify num of threads, iterations, yields, and sync protection.
+
+SortedList.h: header file that describes the interface for the linked list operations
+
+SortedList.c: C module that implements the linked list operations specified in the header file.
+
+data_generator.sh: a test script that runs various combinations of commandline options on lab2_add and
+	lab2_list and outputs them to .csv files.
+
+lab2_add.csv:
+lab2_list.csv:
+	These are the CSV test outputs for lab2_add and lab2_list.
+
+lab2_add.gp:
+lab2_list.gp:
+	These scripts generate the graphs using gnuplot from the data in the .csv files.
+
+.png files.
+	- add-1: Threads and iterations that run without failure
+	- add-2: Cost of yielding 
+	- add-3: Single threaded operation cost vs number of iterations
+	- add-4: Threads and iterations (with sync options) that run without failure
+	- add-5: Per operation cost vs number of threads for protected opeerations.
+
+	- list-1: Average cost per operation for single threaded operation (unprotected)
+	- list-2: Unprotected threads and iterations that run without failure (different yield options)
+	- list-3: Protected Iterations that run without failure.
+	- list-4: Scalability of mutexes vs spin-locks. (cost per operation).
+
+Makefile:
+	default: compiles all programs with -Wall and -Wextra options
+	build:   same as default
+
+	tests: executes data_generator.sh script to test lab2_add and lab2_list; outputs to .csv files
+	graphs: uses supplied .gp scripts to generate graphs
+	dist: creates tarball with the above files
+	clean: restores directory to freshly untarred state.
+
+Sources:
+  - clock_gettime(3) manpage
+  - POSIX Threads Programming: https://computing.llnl.gov/tutorials/pthreads/#Thread
+  - Operating Systems (class textbook) Chapters 27 and 28: "Thread API" and "Locks"
+  - gnuplot manpage
+
+------------------QUESTIONS--------------------
+
 Question 2.1.1:
   - Why does it take many iterations before errors are seen?
 	With a low number of iterations each thread is more likely to finish
@@ -62,4 +113,36 @@ Question 2.1.4
 	waiting for the resource to be freed up. The increased number of thread means
 	more threads attempt to acquire a lock, which leads to slow down.
 
+Question 2.2.1
+  - Compare the variation in time per mutex-protected operation vs the number of threads
+    in Part 1 and Part 2
+  - Comment on the general shapes of the curves, and explain why they have this shape.
+  - Comment on the relative rates of increase and differences in the shapes of the curves,
+    and offer an explanation for these differences.
+	Part 2's mutex protected operation, similar to Part 1's, similarly increases in
+	time cost per mutex protected operation as number of threads increases, but
+	seems to vary less drastically. The add operation cost curve initially steeply
+	increases in cost, but begins to plateau with increasing threads; the list operation
+	cost curve remains linear throughout. The reason for this could be that add operations
+	are not very CPU intensive, so the cost of obtaining a lock dominates the cost/op, while
+	with list operations, the cost of inserts, lookups, and deletes are much more CPU intensive
+	leading to the mutex protection cost not making as large of an impact on overall cost/op, 
+	thus only increasingly linearly due to the constant cost of having the lock.
 
+Question 2.2.2
+  Compare the variation in time per protected operation vs the number of threads for 
+  list operations protected by Mutex vs Spin locks. 
+  Comment on the general shapes of the curves, and explain why they have this shape.
+  Comment on the relative rates of increase and differences in the shapes of the curves, and 
+  offer an explanation for these differences.
+
+	As seen in add-5.png the time cost per protected operation for mutexes levels off
+	after an initial increase, while the cost per protected operation with spin locks
+	increases more and more with increasing number of threads. In the list, the spin
+	locks would also eventually take over mutexes in time cost overhead, but does so
+	more slowly since the cost for the actual list operations dominates rather than 
+	thread overheads. The add-5.png spin lock cost curve has a steep upward slope
+	which indicates that with increasing numbers of threads, each thread spends
+	more time spin waiting, waiting for the lock to be freed up--leading to significant
+	time waste.
+	
