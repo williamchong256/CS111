@@ -5,15 +5,11 @@
 .SILENT:
 
 default:
-	gcc -std=c99 -lmraa -Wall -Wextra -g lab4b.c -o lab4b -lm
-
-
-check: default
-	chmod +x smokecheck.sh
-	./smokecheck.sh
+	gcc -std=c99 -lmraa -Wall -Wextra -g lab4c_tcp.c -o lab4c_tcp -lm
+	gcc -o lab4c_tls -std=c99 -g -Wall -Wextra -lmraa -lcrypto -lssl -lm lab4c_tls.c
 
 clean:
-	rm -f lab4b *.tar.gz
+	rm -f lab4c_tcp lab4c_tls *.tar.gz
 
 dist:
-	tar -cvzf lab4b-205114665.tar.gz lab4b.c Makefile README smokecheck.sh
+	tar -cvzf lab4c-205114665.tar.gz lab4c_tcp.c  lab4c_tls.c Makefile README
