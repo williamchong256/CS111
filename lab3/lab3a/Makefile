@@ -4,7 +4,6 @@ default:
 	gcc -g -Wall -Wextra -std=gnu99 lab3a.c -o lab3a
 
 dist:
-	# tar -cvzf lab3a-204726167.tar.gz lab3a.c ext2_fs.h Makefile README
 	tar -cvzf lab3a-205114665.tar.gz lab3a.c ext2_fs.h Makefile README
 
 clean:
