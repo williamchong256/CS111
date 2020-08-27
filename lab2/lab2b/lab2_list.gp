@@ -1,5 +1,9 @@
 #! /usr/bin/gnuplot
 #
+# NAME: William Chong
+# EMAIL: williamchong256@gmail.com
+# ID: 205114665
+#
 # purpose:
 #	 generate data reduction graphs for the multi-threaded list project
 #
@@ -97,11 +101,11 @@ plot \
     "< grep 'list-none-m,[0-9]*,1000,1,' lab2b_list.csv" using ($2):(1000000000/($7)) \
 	title 'lists=1' with linespoints lc rgb 'red', \
     "< grep 'list-none-m,[0-9]*,1000,4,' lab2b_list.csv" using ($2):(1000000000/($7)) \
-	title 'lists=4' with linespoints lc rgb 'green', \ 
+	title 'lists=4' with linespoints lc rgb 'green', \
     "< grep 'list-none-m,[0-9]*,1000,8,' lab2b_list.csv" using ($2):(1000000000/($7)) \
 	title 'lists=8' with linespoints lc rgb 'blue', \
-    "< grep 'list-none-m,[0-9]*,1000,12,' lab2b_list.csv" using ($2):(1000000000/($7)) \
-	title 'lists=8' with linespoints lc rgb 'orange'
+    "< grep 'list-none-m,[0-9]*,1000,16,' lab2b_list.csv" using ($2):(1000000000/($7)) \
+	title 'lists=16' with linespoints lc rgb 'orange'
 
 
 
@@ -120,11 +124,12 @@ plot \
     "< grep 'list-none-s,[0-9]*,1000,1,' lab2b_list.csv" using ($2):(1000000000/($7)) \
 	title 'lists=1' with linespoints lc rgb 'red', \
     "< grep 'list-none-s,[0-9]*,1000,4,' lab2b_list.csv" using ($2):(1000000000/($7)) \
-	title 'lists=4' with linespoints lc rgb 'green', \ 
+	title 'lists=4' with linespoints lc rgb 'green', \
     "< grep 'list-none-s,[0-9]*,1000,8,' lab2b_list.csv" using ($2):(1000000000/($7)) \
 	title 'lists=8' with linespoints lc rgb 'blue', \
-    "< grep 'list-none-s,[0-9]*,1000,12,' lab2b_list.csv" using ($2):(1000000000/($7)) \
-	title 'lists=8' with linespoints lc rgb 'orange'
+    "< grep 'list-none-s,[0-9]*,1000,16,' lab2b_list.csv" using ($2):(1000000000/($7)) \
+	title 'lists=16' with linespoints lc rgb 'orange'
+
 
 
 

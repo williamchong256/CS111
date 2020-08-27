@@ -47,11 +47,6 @@ Makefile:
 
 
 
-TODO: FINISH README, FINISH LAST QUESTION, ADD LINES FOR 4-PNG AND 5-PNG,
-MAKE SURE MAKE IS SILENT, FIX FIRST AND SECOND PNG, ENSURE IS WORKING 
-PROPERLY FOR SYNC AND LISTS
-
-
 ---------Questions-----------
 
 QUESTION 2.3.1 - CPU time in the basic list implementation:
@@ -124,4 +119,5 @@ throughput of an N-way partitioned list is equal to the throughput of a
 single list with (1/N) threads. This is because the contention for both
 would be about the same, leading to similar throughput. This is shown in
 the graphs.
+
 

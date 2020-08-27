@@ -1,0 +1,445 @@
+Total: 293 samples
+     269  91.8%  91.8%      293 100.0% threadFunction
+       5   1.7%  93.5%        5   1.7% ?? /usr/src/debug////////glibc-2.17-c758a686/string/../sysdeps/x86_64/multiarch/strcmp-sse42.S:200
+       4   1.4%  94.9%        4   1.4% ?? /usr/src/debug////////glibc-2.17-c758a686/string/../sysdeps/x86_64/multiarch/strcmp-sse42.S:1729
+       4   1.4%  96.2%       23   7.8% SortedList_lookup
+       3   1.0%  97.3%        3   1.0% _init
+       2   0.7%  98.0%        2   0.7% ?? /usr/src/debug////////glibc-2.17-c758a686/string/../sysdeps/x86_64/multiarch/strcmp-sse42.S:165
+       2   0.7%  98.6%        2   0.7% ?? /usr/src/debug////////glibc-2.17-c758a686/string/../sysdeps/x86_64/multiarch/strcmp-sse42.S:1730
+       1   0.3%  99.0%        1   0.3% ?? /usr/src/debug////////glibc-2.17-c758a686/string/../sysdeps/x86_64/multiarch/strcmp-sse42.S:160
+       1   0.3%  99.3%        1   0.3% ?? /usr/src/debug////////glibc-2.17-c758a686/string/../sysdeps/x86_64/multiarch/strcmp-sse42.S:1720
+       1   0.3%  99.7%        1   0.3% ?? /usr/src/debug////////glibc-2.17-c758a686/string/../sysdeps/x86_64/multiarch/strcmp-sse42.S:1721
+       1   0.3% 100.0%        1   0.3% 0x00007ffddefed665
+       0   0.0% 100.0%      293 100.0% ?? /usr/src/debug////////glibc-2.17-c758a686/misc/../sysdeps/unix/sysv/linux/x86_64/clone.S:111
+       0   0.0% 100.0%        1   0.3% __GI___clock_gettime
+       0   0.0% 100.0%      293 100.0% start_thread
+ROUTINE ====================== threadFunction in /u/ma/ugrad/hongen/cs111/lab2b/lab2_list.c
+   269    293 Total samples (flat / cumulative)
+     .      .  112: //inserts them all into a (single shared-by-all-threads) list
+     .      .  113: //gets the list length
+     .      .  114: //looks up and deletes each of the keys it had previously inserted
+     .      .  115: //exits to re-join the parent thread
+     .      .  116: void* threadFunction(void *arg)
+---
+     .      .  117: {
+     .      .  118:     struct timespec lockstart, lockend;
+     .      .  119:     long locktime=0;
+     .      .  120:     int hashIndex;
+     .      .  121:     //passed in argument is the elements array starting at the corresponding thread's offset
+     .      .  122:     SortedListElement_t * threadElements = arg;
+     .      .  123:     
+     .      .  124:     //insert all of them into the global list
+     .      .  125:     for (int i=0; i<num_iterations; i++)
+     .      .  126:     {
+     .      .  127:         //pass the element's key through the hash function to determine what hash.
+     .      .  128:         hashIndex = hashFunction(threadElements[i].key);
+     .      .  129:         //acquire specific lock corresponding to hash
+     .      .  130:         if (sync_type == 'm')
+     .      .  131:         {
+     .      .  132:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  133:             {
+     .      .  134:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  135:                 exit(1);
+     .      .  136:             }
+     .      .  137:             
+     .      .  138:             pthread_mutex_lock(mutexlocks+hashIndex);  //acquire corresponding mutex lock
+     .      .  139:             
+     .      .  140:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  141:             {
+     .      .  142:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  143:                 exit(1);
+     .      .  144:             }
+     .      .  145:             //get the time spent getting lock.
+     .      .  146:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  147:         }
+     .      .  148:         else if (sync_type == 's')
+     .      .  149:         {
+     .      .  150:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  151:             {
+     .      .  152:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  153:                 exit(1);
+     .      .  154:             }
+     .      .  155:             
+   199    199  156:             while (__sync_lock_test_and_set((spinlocks+hashIndex), 1));  //acquire spinlock
+     .      .  157:             
+     .      .  158:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  159:             {
+     .      .  160:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  161:                 exit(1);
+     .      .  162:             }
+     .      .  163:             //get the time spent getting lock.
+     .      .  164:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  165:         }
+     .      .  166:         
+     .      .  167:         //insert into sublist based on which hash index
+     .      .  168:         SortedList_insert((sublists + hashIndex), (SortedListElement_t*) (threadElements+i));
+     .      .  169:         
+     .      .  170:         //release mutex or spin lock
+     .      .  171:         if (sync_type == 'm')
+     .      .  172:         {
+     .      .  173:             pthread_mutex_unlock(mutexlocks+hashIndex);  //release mutex lock
+     .      .  174:         }
+     .      .  175:         else if (sync_type == 's')
+     .      .  176:         {
+     .      .  177:             __sync_lock_release(spinlocks+hashIndex);  //release spinlock;
+     .      .  178:         }
+     .      .  179:     }
+     .      .  180:     
+     .      .  181:     
+     .      .  182:     //acquire all locks so no threads can access while accessing entire sublist
+     .      .  183:     for (int i=0; i<num_lists; i++)
+     .      .  184:     {
+     .      .  185:         if (sync_type == 'm')
+     .      .  186:         {
+     .      .  187:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  188:             {
+     .      .  189:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  190:                 exit(1);
+     .      .  191:             }
+     .      .  192:             pthread_mutex_lock(mutexlocks+i);  //acquire mutex lock
+     .      .  193:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  194:             {
+     .      .  195:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  196:                 exit(1);
+     .      .  197:             }
+     .      .  198:             //get the time spent getting lock.
+     .      .  199:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  200:         }
+     .      .  201:         else if (sync_type == 's')
+     .      .  202:         {
+     .      .  203:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  204:             {
+     .      .  205:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  206:                 exit(1);
+     .      .  207:             }
+     1      1  208:             while (__sync_lock_test_and_set(spinlocks+i, 1));  //acquire lock with spinLock;
+     .      .  209:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  210:             {
+     .      .  211:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  212:                 exit(1);
+     .      .  213:             }
+     .      .  214:             //get the time spent getting lock.
+     .      .  215:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  216:         }
+     .      .  217:     }
+     .      .  218:     
+     .      .  219:     //get total list length (all sublists)
+     .      .  220:     int list_len=0;
+     .      .  221:     
+     .      .  222:     for (int i=0; i<num_lists; i++)
+     .      .  223:     {
+     .      .  224:         list_len += SortedList_length(sublists+i);
+     .      .  225:     }
+     .      .  226:     
+     .      .  227:     if (list_len<0)   //corrupted list
+     .      .  228:     {
+     .      .  229:         fprintf(stderr, "Corrupted list detected.\n");
+     .      .  230:         exit(2);
+     .      .  231:     }
+     .      .  232:     else if (list_len < num_iterations)  //if length does not match up
+     .      .  233:     {
+     .      .  234:         fprintf(stderr, "Incorrect number of elements inserted into list.\n");
+     .      .  235:         exit(2);
+     .      .  236:     }
+     .      .  237:     
+     .      .  238:     //release all mutexlocks or spin locks
+     .      .  239:     for (int i=0; i<num_lists; i++)
+     .      .  240:     {
+     .      .  241:         if (sync_type == 'm')
+     .      .  242:         {
+     .      .  243:             pthread_mutex_unlock(mutexlocks + i);  //release mutex lock
+     .      .  244:         }
+     .      .  245:         else if (sync_type == 's')
+     .      .  246:         {
+     .      .  247:             __sync_lock_release(spinlocks+i);
+     .      .  248:         }
+     .      .  249:     }
+     .      .  250:     
+     .      .  251:     
+     .      .  252:     
+     .      .  253:     //look up and delete each of keys inserted
+     .      .  254:     for (int i=0; i<num_iterations; i++)
+     .      .  255:     {
+     .      .  256:         //get hash index again
+     .      .  257:         hashIndex = hashFunction(threadElements[i].key);
+     .      .  258:         
+     .      .  259:         //acquire lock
+     .      .  260:         if (sync_type == 'm')
+     .      .  261:         {
+     .      .  262:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  263:             {
+     .      .  264:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  265:                 exit(1);
+     .      .  266:             }
+     .      .  267:             pthread_mutex_lock(mutexlocks+hashIndex);  //acquire mutex lock
+     .      .  268:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  269:             {
+     .      .  270:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  271:                 exit(1);
+     .      .  272:             }
+     .      .  273:             //get the time spent getting lock.
+     .      .  274:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  275:         }
+     .      .  276:         else if (sync_type == 's')
+     .      .  277:         {
+     .      .  278:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  279:             {
+     .      .  280:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  281:                 exit(1);
+     .      .  282:             }
+    68     68  283:             while (__sync_lock_test_and_set(spinlocks+hashIndex, 1));
+     1      2  284:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  285:             {
+     .      .  286:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  287:                 exit(1);
+     .      .  288:             }
+     .      .  289:             //get the time spent getting lock.
+     .      .  290:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  291:         }
+     .      .  292:         
+     .     23  293:         if ( SortedList_lookup(sublists+hashIndex, (threadElements+i)->key) == NULL)
+     .      .  294:         {
+     .      .  295:             //failed lookup
+     .      .  296:             fprintf(stderr, "Not able to find key: %s in list.\n",(threadElements+i)->key );
+     .      .  297:             exit(2);
+     .      .  298:         }
+     .      .  299: 
+     .      .  300:         if ( SortedList_delete(threadElements+i) != 0 ) //if corrupted
+     .      .  301:         {
+     .      .  302:             fprintf(stderr, "Corrupt list element detected. Failed delete.\n");
+     .      .  303:             exit(2);
+     .      .  304:         }
+     .      .  305:         
+     .      .  306:         //release mutex or spin lock
+     .      .  307:         if (sync_type == 'm')
+     .      .  308:         {
+     .      .  309:             pthread_mutex_unlock(mutexlocks+hashIndex);  //release mutex lock
+     .      .  310:         }
+     .      .  311:         else if (sync_type == 's')
+     .      .  312:         {
+     .      .  313:             __sync_lock_release(spinlocks+hashIndex);  //release spinlock
+     .      .  314:         }
+     .      .  315:     }
+     .      .  316:     return (void*)locktime;
+     .      .  317: }
+---
+     .      .  318: 
+     .      .  319: int main(int argc, char * argv[]) {
+     .      .  320:     struct timespec starttime, endtime;
+     .      .  321:     num_iterations = 1;
+     .      .  322:     num_threads = 1;
+ROUTINE ====================== threadFunction in /u/ma/ugrad/hongen/cs111/lab2b/lab2_list.c
+   269    293 Total samples (flat / cumulative)
+     .      .  112: //inserts them all into a (single shared-by-all-threads) list
+     .      .  113: //gets the list length
+     .      .  114: //looks up and deletes each of the keys it had previously inserted
+     .      .  115: //exits to re-join the parent thread
+     .      .  116: void* threadFunction(void *arg)
+---
+     .      .  117: {
+     .      .  118:     struct timespec lockstart, lockend;
+     .      .  119:     long locktime=0;
+     .      .  120:     int hashIndex;
+     .      .  121:     //passed in argument is the elements array starting at the corresponding thread's offset
+     .      .  122:     SortedListElement_t * threadElements = arg;
+     .      .  123:     
+     .      .  124:     //insert all of them into the global list
+     .      .  125:     for (int i=0; i<num_iterations; i++)
+     .      .  126:     {
+     .      .  127:         //pass the element's key through the hash function to determine what hash.
+     .      .  128:         hashIndex = hashFunction(threadElements[i].key);
+     .      .  129:         //acquire specific lock corresponding to hash
+     .      .  130:         if (sync_type == 'm')
+     .      .  131:         {
+     .      .  132:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  133:             {
+     .      .  134:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  135:                 exit(1);
+     .      .  136:             }
+     .      .  137:             
+     .      .  138:             pthread_mutex_lock(mutexlocks+hashIndex);  //acquire corresponding mutex lock
+     .      .  139:             
+     .      .  140:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  141:             {
+     .      .  142:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  143:                 exit(1);
+     .      .  144:             }
+     .      .  145:             //get the time spent getting lock.
+     .      .  146:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  147:         }
+     .      .  148:         else if (sync_type == 's')
+     .      .  149:         {
+     .      .  150:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  151:             {
+     .      .  152:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  153:                 exit(1);
+     .      .  154:             }
+     .      .  155:             
+   199    199  156:             while (__sync_lock_test_and_set((spinlocks+hashIndex), 1));  //acquire spinlock
+     .      .  157:             
+     .      .  158:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  159:             {
+     .      .  160:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  161:                 exit(1);
+     .      .  162:             }
+     .      .  163:             //get the time spent getting lock.
+     .      .  164:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  165:         }
+     .      .  166:         
+     .      .  167:         //insert into sublist based on which hash index
+     .      .  168:         SortedList_insert((sublists + hashIndex), (SortedListElement_t*) (threadElements+i));
+     .      .  169:         
+     .      .  170:         //release mutex or spin lock
+     .      .  171:         if (sync_type == 'm')
+     .      .  172:         {
+     .      .  173:             pthread_mutex_unlock(mutexlocks+hashIndex);  //release mutex lock
+     .      .  174:         }
+     .      .  175:         else if (sync_type == 's')
+     .      .  176:         {
+     .      .  177:             __sync_lock_release(spinlocks+hashIndex);  //release spinlock;
+     .      .  178:         }
+     .      .  179:     }
+     .      .  180:     
+     .      .  181:     
+     .      .  182:     //acquire all locks so no threads can access while accessing entire sublist
+     .      .  183:     for (int i=0; i<num_lists; i++)
+     .      .  184:     {
+     .      .  185:         if (sync_type == 'm')
+     .      .  186:         {
+     .      .  187:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  188:             {
+     .      .  189:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  190:                 exit(1);
+     .      .  191:             }
+     .      .  192:             pthread_mutex_lock(mutexlocks+i);  //acquire mutex lock
+     .      .  193:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  194:             {
+     .      .  195:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  196:                 exit(1);
+     .      .  197:             }
+     .      .  198:             //get the time spent getting lock.
+     .      .  199:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  200:         }
+     .      .  201:         else if (sync_type == 's')
+     .      .  202:         {
+     .      .  203:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  204:             {
+     .      .  205:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  206:                 exit(1);
+     .      .  207:             }
+     1      1  208:             while (__sync_lock_test_and_set(spinlocks+i, 1));  //acquire lock with spinLock;
+     .      .  209:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  210:             {
+     .      .  211:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  212:                 exit(1);
+     .      .  213:             }
+     .      .  214:             //get the time spent getting lock.
+     .      .  215:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  216:         }
+     .      .  217:     }
+     .      .  218:     
+     .      .  219:     //get total list length (all sublists)
+     .      .  220:     int list_len=0;
+     .      .  221:     
+     .      .  222:     for (int i=0; i<num_lists; i++)
+     .      .  223:     {
+     .      .  224:         list_len += SortedList_length(sublists+i);
+     .      .  225:     }
+     .      .  226:     
+     .      .  227:     if (list_len<0)   //corrupted list
+     .      .  228:     {
+     .      .  229:         fprintf(stderr, "Corrupted list detected.\n");
+     .      .  230:         exit(2);
+     .      .  231:     }
+     .      .  232:     else if (list_len < num_iterations)  //if length does not match up
+     .      .  233:     {
+     .      .  234:         fprintf(stderr, "Incorrect number of elements inserted into list.\n");
+     .      .  235:         exit(2);
+     .      .  236:     }
+     .      .  237:     
+     .      .  238:     //release all mutexlocks or spin locks
+     .      .  239:     for (int i=0; i<num_lists; i++)
+     .      .  240:     {
+     .      .  241:         if (sync_type == 'm')
+     .      .  242:         {
+     .      .  243:             pthread_mutex_unlock(mutexlocks + i);  //release mutex lock
+     .      .  244:         }
+     .      .  245:         else if (sync_type == 's')
+     .      .  246:         {
+     .      .  247:             __sync_lock_release(spinlocks+i);
+     .      .  248:         }
+     .      .  249:     }
+     .      .  250:     
+     .      .  251:     
+     .      .  252:     
+     .      .  253:     //look up and delete each of keys inserted
+     .      .  254:     for (int i=0; i<num_iterations; i++)
+     .      .  255:     {
+     .      .  256:         //get hash index again
+     .      .  257:         hashIndex = hashFunction(threadElements[i].key);
+     .      .  258:         
+     .      .  259:         //acquire lock
+     .      .  260:         if (sync_type == 'm')
+     .      .  261:         {
+     .      .  262:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  263:             {
+     .      .  264:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  265:                 exit(1);
+     .      .  266:             }
+     .      .  267:             pthread_mutex_lock(mutexlocks+hashIndex);  //acquire mutex lock
+     .      .  268:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  269:             {
+     .      .  270:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  271:                 exit(1);
+     .      .  272:             }
+     .      .  273:             //get the time spent getting lock.
+     .      .  274:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  275:         }
+     .      .  276:         else if (sync_type == 's')
+     .      .  277:         {
+     .      .  278:             if (clock_gettime(CLOCK_REALTIME, &lockstart) < 0)
+     .      .  279:             {
+     .      .  280:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  281:                 exit(1);
+     .      .  282:             }
+    68     68  283:             while (__sync_lock_test_and_set(spinlocks+hashIndex, 1));
+     1      2  284:             if (clock_gettime(CLOCK_REALTIME, &lockend) < 0)
+     .      .  285:             {
+     .      .  286:                 fprintf(stderr, "Error getting endtime with clock_gettime().\n");
+     .      .  287:                 exit(1);
+     .      .  288:             }
+     .      .  289:             //get the time spent getting lock.
+     .      .  290:             locktime += (lockend.tv_sec*1e9 + lockend.tv_nsec) - (lockstart.tv_sec*1e9 + lockstart.tv_nsec);
+     .      .  291:         }
+     .      .  292:         
+     .     23  293:         if ( SortedList_lookup(sublists+hashIndex, (threadElements+i)->key) == NULL)
+     .      .  294:         {
+     .      .  295:             //failed lookup
+     .      .  296:             fprintf(stderr, "Not able to find key: %s in list.\n",(threadElements+i)->key );
+     .      .  297:             exit(2);
+     .      .  298:         }
+     .      .  299: 
+     .      .  300:         if ( SortedList_delete(threadElements+i) != 0 ) //if corrupted
+     .      .  301:         {
+     .      .  302:             fprintf(stderr, "Corrupt list element detected. Failed delete.\n");
+     .      .  303:             exit(2);
+     .      .  304:         }
+     .      .  305:         
+     .      .  306:         //release mutex or spin lock
+     .      .  307:         if (sync_type == 'm')
+     .      .  308:         {
+     .      .  309:             pthread_mutex_unlock(mutexlocks+hashIndex);  //release mutex lock
+     .      .  310:         }
+     .      .  311:         else if (sync_type == 's')
+     .      .  312:         {
+     .      .  313:             __sync_lock_release(spinlocks+hashIndex);  //release spinlock
+     .      .  314:         }
+     .      .  315:     }
+     .      .  316:     return (void*)locktime;
+     .      .  317: }
+---
+     .      .  318: 
+     .      .  319: int main(int argc, char * argv[]) {
+     .      .  320:     struct timespec starttime, endtime;
+     .      .  321:     num_iterations = 1;
+     .      .  322:     num_threads = 1;
