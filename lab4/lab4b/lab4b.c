@@ -15,7 +15,6 @@
 #include <math.h>
 #include <fcntl.h>
 #include <ctype.h>
-#include <dos.h>
 
 
 int scaleflag = 0;
@@ -308,3 +307,4 @@ int main(int argc, char * argv[]) {
     
     exit(0);
 }
+
